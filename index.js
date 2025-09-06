@@ -497,9 +497,9 @@ function prepareChartsData(allYearStats) {
   const htmlContent = await generateHTMLFromTemplate(chartsData);
   
   try {
-    await writeFile('charts.html', htmlContent, 'utf-8');
+    await writeFile('index.html', htmlContent, 'utf-8');
     console.log('📊 Charts have been generated successfully!');
-    console.log('🔗 Open charts.html in your browser to view the visualizations.');
+    console.log('🔗 Open index.html in your browser to view the visualizations.');
   } catch (error) {
     console.error('Error generating charts:', error);
   }
