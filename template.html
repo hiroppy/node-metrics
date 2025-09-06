@@ -52,12 +52,19 @@
 </head>
 <body>
   <div class="container">
-    <h1>📊 Node.js Download Statistics (2009-2025)</h1>
+    <h1>📊 Node.js Download Statistics (2014-2025)</h1>
     
     <div class="chart-container">
       <div class="chart-title">📈 Annual Download Trends</div>
       <div class="chart-wrapper">
         <canvas id="yearlyChart"></canvas>
+      </div>
+    </div>
+
+    <div class="chart-container">
+      <div class="chart-title">📊 Monthly Downloads Trend (Latest Year)</div>
+      <div class="chart-wrapper">
+        <canvas id="monthlyTrendChart"></canvas>
       </div>
     </div>
 
@@ -290,6 +297,54 @@
         }
       }
     });
+
+    // 最新年の月次推移グラフ
+    if (chartsData.monthlyTrend && chartsData.monthlyTrend.labels.length > 0) {
+      const monthlyTrendCtx = document.getElementById('monthlyTrendChart').getContext('2d');
+      new Chart(monthlyTrendCtx, {
+        type: 'line',
+        data: {
+          labels: chartsData.monthlyTrend.labels,
+          datasets: [{
+            label: `Downloads in ${chartsData.monthlyTrend.year}`,
+            data: chartsData.monthlyTrend.data,
+            borderColor: 'rgb(255, 99, 132)',
+            backgroundColor: 'rgba(255, 99, 132, 0.2)',
+            tension: 0.1,
+            fill: true,
+            pointBackgroundColor: 'rgb(255, 99, 132)',
+            pointBorderColor: 'rgb(255, 99, 132)',
+            pointRadius: 5
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          scales: {
+            y: {
+              beginAtZero: true,
+              ticks: {
+                callback: function(value) {
+                  return (value / 1000000).toFixed(0) + 'M';
+                }
+              }
+            }
+          },
+          plugins: {
+            tooltip: {
+              callbacks: {
+                label: function(context) {
+                  return context.dataset.label + ': ' + context.parsed.y.toLocaleString();
+                }
+              }
+            },
+            legend: {
+              display: true
+            }
+          }
+        }
+      });
+    }
   </script>
 </body>
 </html>

@@ -165,20 +165,21 @@ function processLocalData(csvData) {
       };
     }
     
-    // Aggregate downloads
-    localTable[year][monthNum][day].downloads += parseInt(downloads) || 0;
-    
-    // Add version data
-    if (version) {
+    // Only use version-based data for monthly total downloads
+    // OS data is processed separately for statistics only
+    if (version && !os) {
+      // Aggregate monthly total from version-based rows only
+      localTable[year][monthNum][day].downloads += parseInt(downloads) || 0;
+      
+      // Add version data
       if (!localTable[year][monthNum][day].version[version]) {
         localTable[year][monthNum][day].version[version] = 0;
       }
       localTable[year][monthNum][day].version[version] += parseInt(downloads) || 0;
-      
     }
     
-    // Add OS data
-    if (os && os !== 'unknown') {
+    // Process OS data separately for statistics (not added to total downloads)
+    if (os && !version && os !== 'unknown') {
       if (!localTable[year][monthNum][day].os[os]) {
         localTable[year][monthNum][day].os[os] = 0;
       }
@@ -199,7 +200,7 @@ async function generateHTMLFromTemplate(chartsData) {
   }
 }
 
-function prepareChartsData(allYearStats) {
+function prepareChartsData(allYearStats, monthlyData = {}) {
   const chartsData = {
     yearly: {
       labels: [],
@@ -221,6 +222,10 @@ function prepareChartsData(allYearStats) {
     osTrends: {
       labels: [],
       datasets: []
+    },
+    monthlyTrend: {
+      labels: [],
+      data: []
     }
   };
 
@@ -307,6 +312,23 @@ function prepareChartsData(allYearStats) {
     chartsData.versions.labels = versionEntries.map(([version]) => version);
     chartsData.versions.data = versionEntries.map(([,count]) => count);
 
+  }
+
+  // 最新年の月次推移データを準備
+  const currentLatestYear = years[years.length - 1];
+  if (monthlyData[currentLatestYear]) {
+    const months = Object.keys(monthlyData[currentLatestYear]).sort();
+    chartsData.monthlyTrend.labels = months.map(month => {
+      const monthNames = ['', 'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 
+                         'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+      return `${currentLatestYear}-${monthNames[parseInt(month)]}`;
+    });
+    
+    chartsData.monthlyTrend.data = months.map(month => {
+      return calcMonth(monthlyData[currentLatestYear][month]).downloads;
+    });
+    
+    chartsData.monthlyTrend.year = currentLatestYear;
   }
 
   return chartsData;
@@ -424,29 +446,68 @@ function prepareChartsData(allYearStats) {
   if (localCsvData.length > 0) {
     const localTable = processLocalData(localCsvData);
     
-    // Merge local data with existing table (local data takes priority for overlapping years)
+    // Merge local data with existing table (local data takes priority for overlapping periods)
     Object.keys(localTable).forEach(year => {
       if (!table[year]) {
         table[year] = {};
       }
       
       Object.keys(localTable[year]).forEach(month => {
-        if (!table[year][month]) {
-          table[year][month] = {};
-        }
-        
-        Object.keys(localTable[year][month]).forEach(day => {
-          // Merge or replace data
-          table[year][month][day] = {
-            ...table[year][month][day],
-            ...localTable[year][month][day]
-          };
-        });
+        // When local CSV has data for a month, replace the entire month's API data
+        // to avoid double counting (local CSV contains monthly totals, API has daily data)
+        table[year][month] = localTable[year][month];
       });
     });
   }
 
-  // 2009-2025年の年別統計
+  // Data validation: verify CSV calculations match script output
+  if (localCsvData.length > 0) {
+    console.log('=== Data Validation ===\n');
+    
+    // Calculate version-based totals from CSV (master data)
+    const csvVersionTotals = {};
+    const csvOSTotals = {};
+    
+    localCsvData.slice(1).forEach(row => {
+      if (row.length < 4) return;
+      const [month, version, os, downloads] = row;
+      if (!month || !downloads) return;
+      
+      const year = month.split('-')[0];
+      
+      // Version-based data (master for monthly totals)
+      if (version && !os) {
+        csvVersionTotals[year] = (csvVersionTotals[year] || 0) + (parseInt(downloads) || 0);
+      }
+      
+      // OS-based data (statistics only)
+      if (os && !version && os !== 'unknown') {
+        csvOSTotals[year] = (csvOSTotals[year] || 0) + (parseInt(downloads) || 0);
+      }
+    });
+    
+    // Compare with script calculations
+    Object.keys(csvVersionTotals).sort().forEach(year => {
+      const csvVersionTotal = csvVersionTotals[year];
+      const csvOSTotal = csvOSTotals[year] || 0;
+      const scriptTotal = table[year] ? calcYear(table[year]).downloads : 0;
+      const difference = scriptTotal - csvVersionTotal;
+      const apiOnlyData = difference; // This should be API-only data (like Jan 2021)
+      
+      console.log(`📊 ${year} Validation:`);
+      console.log(`  CSV Version-based Total (Master): ${csvVersionTotal.toLocaleString()}`);
+      console.log(`  CSV OS-based Total (Reference): ${csvOSTotal.toLocaleString()}`);
+      console.log(`  Script Output: ${scriptTotal.toLocaleString()}`);
+      console.log(`  Difference (API-only): ${apiOnlyData.toLocaleString()}`);
+      console.log(`  ✅ ${difference >= 0 ? 'Valid' : '❌ Invalid'}`);
+      
+      // Show consistency check
+      const consistency = Math.abs(csvVersionTotal - csvOSTotal) / csvVersionTotal * 100;
+      console.log(`  📋 Version vs OS consistency: ${consistency.toFixed(1)}% difference\n`);
+    });
+  }
+
+  // 2014-2025年の年別統計
   console.log('=== Node.js Download Statistics by Year ===\n');
   
   const allYearStats = {};
@@ -460,6 +521,15 @@ function prepareChartsData(allYearStats) {
       
       console.log(`📅 ${year}年`);
       console.log(`📦 Total Downloads: ${yearStats.downloads.toLocaleString()}`);
+      
+      // Show monthly version-based totals for CSV years
+      if (yearStr >= '2021' && table[yearStr]) {
+        console.log('📅 Monthly Totals (Version-based):');
+        Object.keys(table[yearStr]).sort().forEach(month => {
+          const monthStats = calcMonth(table[yearStr][month]);
+          console.log(`  ${year}-${month}: ${monthStats.downloads.toLocaleString()}`);
+        });
+      }
       
       // OS別統計
       console.log('💻 OS Distribution:');
@@ -493,7 +563,7 @@ function prepareChartsData(allYearStats) {
   }
 
   // グラフ用データの準備とHTMLファイル生成
-  const chartsData = prepareChartsData(allYearStats);
+  const chartsData = prepareChartsData(allYearStats, table);
   const htmlContent = await generateHTMLFromTemplate(chartsData);
   
   try {
