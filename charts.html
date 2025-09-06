@@ -1,0 +1,667 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Node.js Download Statistics</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 20px;
+      background-color: #f5f5f5;
+    }
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+    }
+    h1 {
+      text-align: center;
+      color: #333;
+      margin-bottom: 30px;
+    }
+    .chart-container {
+      background: white;
+      border-radius: 8px;
+      padding: 20px;
+      margin: 20px 0;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+    .chart-wrapper {
+      position: relative;
+      height: 400px;
+    }
+    .chart-title {
+      font-size: 18px;
+      font-weight: bold;
+      margin-bottom: 15px;
+      color: #333;
+      text-align: center;
+    }
+    .grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 20px;
+    }
+    @media (max-width: 768px) {
+      .grid {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>📊 Node.js Download Statistics (2009-2025)</h1>
+    
+    <div class="chart-container">
+      <div class="chart-title">📈 Annual Download Trends</div>
+      <div class="chart-wrapper">
+        <canvas id="yearlyChart"></canvas>
+      </div>
+    </div>
+
+    <div class="grid">
+      <div class="chart-container">
+        <div class="chart-title">💻 OS Distribution (2025)</div>
+        <div class="chart-wrapper">
+          <canvas id="osChart"></canvas>
+        </div>
+      </div>
+
+      <div class="chart-container">
+        <div class="chart-title">🔢 Version Usage (2025)</div>
+        <div class="chart-wrapper">
+          <canvas id="versionChart"></canvas>
+        </div>
+      </div>
+    </div>
+
+
+    <div class="chart-container">
+      <div class="chart-title">📈 Version Usage Trends</div>
+      <div class="chart-wrapper">
+        <canvas id="versionTrendChart"></canvas>
+      </div>
+    </div>
+
+    <div class="chart-container">
+      <div class="chart-title">💻 OS Distribution Trends</div>
+      <div class="chart-wrapper">
+        <canvas id="osTrendChart"></canvas>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const chartsData = {
+  "yearly": {
+    "labels": [
+      "2014",
+      "2015",
+      "2016",
+      "2017",
+      "2018",
+      "2019",
+      "2020",
+      "2021",
+      "2022",
+      "2023",
+      "2024",
+      "2025"
+    ],
+    "data": [
+      29641217,
+      91552796,
+      177214920,
+      262750089,
+      368985988,
+      430413836,
+      50929190,
+      1457210384,
+      2092687386,
+      2933613097,
+      3779071466,
+      5850116558
+    ]
+  },
+  "os": {
+    "labels": [
+      "headers",
+      "linux",
+      "win",
+      "osx",
+      "src",
+      "sunos"
+    ],
+    "data": [
+      1451897453,
+      1039438364,
+      356197040,
+      49687046,
+      27997082,
+      1155433
+    ],
+    "total": 5850116558
+  },
+  "versions": {
+    "labels": [
+      "20",
+      "22",
+      "18",
+      "16",
+      "12",
+      "23",
+      "14",
+      "24",
+      "10",
+      "21"
+    ],
+    "data": [
+      881222970,
+      869509263,
+      416207951,
+      188500757,
+      170620332,
+      109451342,
+      91987334,
+      61863620,
+      43084942,
+      37014786
+    ]
+  },
+  "versionTrends": {
+    "labels": [
+      "2014",
+      "2015",
+      "2016",
+      "2017",
+      "2018",
+      "2019",
+      "2020",
+      "2021",
+      "2022",
+      "2023",
+      "2024",
+      "2025"
+    ],
+    "datasets": [
+      {
+        "label": "v24",
+        "data": [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          1.0574767081418552
+        ],
+        "borderColor": "rgb(255, 99, 132)",
+        "backgroundColor": "rgb(255, 99, 132)20",
+        "tension": 0.1
+      },
+      {
+        "label": "v23",
+        "data": [
+          0,
+          0.0006138534534761778,
+          0.001477302249720283,
+          0.0008060891655873046,
+          0.0003075997563354628,
+          0.0017910669581727853,
+          0.030982232389715997,
+          0.000563611136056796,
+          0.00043040351178377106,
+          0.00010669436958816521,
+          0.7349731342709674,
+          1.8709258339532728
+        ],
+        "borderColor": "rgb(54, 162, 235)",
+        "backgroundColor": "rgb(54, 162, 235)20",
+        "tension": 0.1
+      },
+      {
+        "label": "v22",
+        "data": [
+          0,
+          0.0006029307941616551,
+          0.0014874594080453271,
+          0.0008978113038812329,
+          0.0003566531095484309,
+          0.0023412351456099565,
+          0.039812139168127356,
+          0.0007278976403451157,
+          0.000557799510719658,
+          0.00013948669659896872,
+          3.0264994993878744,
+          14.863110065917425
+        ],
+        "borderColor": "rgb(255, 205, 86)",
+        "backgroundColor": "rgb(255, 205, 86)20",
+        "tension": 0.1
+      },
+      {
+        "label": "v21",
+        "data": [
+          0,
+          0.00457768651871648,
+          0.008392634209354382,
+          0.003739294642065754,
+          0.0013068246916736579,
+          0.004076541814515461,
+          0.059449207811865856,
+          0.001058049007150089,
+          0.0008091509564821356,
+          0.3742053787265322,
+          1.223268292645726,
+          0.6327187780452425
+        ],
+        "borderColor": "rgb(75, 192, 192)",
+        "backgroundColor": "rgb(75, 192, 192)20",
+        "tension": 0.1
+      },
+      {
+        "label": "v20",
+        "data": [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          2.3097106796152267,
+          16.453164318115597,
+          15.063340384131882
+        ],
+        "borderColor": "rgb(153, 102, 255)",
+        "backgroundColor": "rgb(153, 102, 255)20",
+        "tension": 0.1
+      },
+      {
+        "label": "v19",
+        "data": [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0.4326795325749625,
+          0.9948867500573475,
+          0.2801003922586311,
+          0.2158089138025
+        ],
+        "borderColor": "rgb(255, 159, 64)",
+        "backgroundColor": "rgb(255, 159, 64)20",
+        "tension": 0.1
+      },
+      {
+        "label": "v18",
+        "data": [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          2.2181503702149232,
+          13.768719208850738,
+          15.846388283147647,
+          7.114524076120126
+        ],
+        "borderColor": "rgb(199, 199, 199)",
+        "backgroundColor": "rgb(199, 199, 199)20",
+        "tension": 0.1
+      },
+      {
+        "label": "v17",
+        "data": [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0.431848830415691,
+          1.1546915779995055,
+          0.3481040499322532,
+          0.18392668840838483,
+          0.10662331148718969
+        ],
+        "borderColor": "rgb(83, 102, 147)",
+        "backgroundColor": "rgb(83, 102, 147)20",
+        "tension": 0.1
+      }
+    ]
+  },
+  "osTrends": {
+    "labels": [
+      "2014",
+      "2015",
+      "2016",
+      "2017",
+      "2018",
+      "2019",
+      "2020",
+      "2021",
+      "2022",
+      "2023",
+      "2024",
+      "2025"
+    ],
+    "datasets": [
+      {
+        "label": "linux",
+        "data": [
+          20.641581619270223,
+          31.210224316906714,
+          46.57305773125649,
+          54.444765954008865,
+          48.388533116872715,
+          45.855485695864104,
+          38.82801788129754,
+          18.03986149744593,
+          18.59276734800369,
+          19.416554915932732,
+          14.419458904194219,
+          17.767823148387944
+        ],
+        "borderColor": "rgb(255, 99, 132)",
+        "backgroundColor": "rgb(255, 99, 132)20",
+        "tension": 0.1
+      },
+      {
+        "label": "win",
+        "data": [
+          21.70866331163123,
+          18.617250094688533,
+          16.620869732638766,
+          13.542482948502446,
+          10.755520613427738,
+          10.596137062842933,
+          26.05118204314657,
+          7.108179789089397,
+          5.566464049016828,
+          5.257804383193344,
+          6.458697148121094,
+          6.088716976295158
+        ],
+        "borderColor": "rgb(54, 162, 235)",
+        "backgroundColor": "rgb(54, 162, 235)20",
+        "tension": 0.1
+      },
+      {
+        "label": "osx",
+        "data": [
+          4.62765749462986,
+          3.7088697979251224,
+          3.589084937092204,
+          3.373182111462577,
+          2.991408172388378,
+          3.071165909266913,
+          9.171616513044876,
+          1.31429224017937,
+          1.5005601032470695,
+          1.312557134387514,
+          1.2126764580217653,
+          0.8493342911613146
+        ],
+        "borderColor": "rgb(255, 205, 86)",
+        "backgroundColor": "rgb(255, 205, 86)20",
+        "tension": 0.1
+      },
+      {
+        "label": "sunos",
+        "data": [
+          0.13874936376600192,
+          0.11150942894196261,
+          0.25052687437378296,
+          0.252795727882703,
+          0.07188132032807706,
+          0.22373560500503986,
+          5.403991306360851,
+          0.14071365552388213,
+          0.11430966784639471,
+          0.03403560616159875,
+          0.11613662349300488,
+          0.01975059793330019
+        ],
+        "borderColor": "rgb(75, 192, 192)",
+        "backgroundColor": "rgb(75, 192, 192)20",
+        "tension": 0.1
+      },
+      {
+        "label": "aix",
+        "data": [
+          0,
+          0,
+          0.00670598164082347,
+          0.018900469335331033,
+          0.01675239765473154,
+          0.050478395866437716,
+          1.0484341101831778,
+          0.04605134628247337,
+          0.047404165889113836,
+          0.018245009900840378,
+          0.04966765029153328,
+          0.006429649670580118
+        ],
+        "borderColor": "rgb(153, 102, 255)",
+        "backgroundColor": "rgb(153, 102, 255)20",
+        "tension": 0.1
+      }
+    ]
+  }
+};
+    
+    // 年別ダウンロード数推移グラフ
+    const yearlyCtx = document.getElementById('yearlyChart').getContext('2d');
+    new Chart(yearlyCtx, {
+      type: 'line',
+      data: {
+        labels: chartsData.yearly.labels,
+        datasets: [{
+          label: 'Downloads',
+          data: chartsData.yearly.data,
+          borderColor: 'rgb(75, 192, 192)',
+          backgroundColor: 'rgba(75, 192, 192, 0.2)',
+          tension: 0.1,
+          fill: true
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        scales: {
+          y: {
+            beginAtZero: true,
+            ticks: {
+              callback: function(value) {
+                return (value / 1000000000).toFixed(1) + 'B';
+              }
+            }
+          }
+        },
+        plugins: {
+          tooltip: {
+            callbacks: {
+              label: function(context) {
+                return 'Downloads: ' + context.parsed.y.toLocaleString();
+              }
+            }
+          }
+        }
+      }
+    });
+
+    // OS別使用率グラフ
+    const osCtx = document.getElementById('osChart').getContext('2d');
+    new Chart(osCtx, {
+      type: 'pie',
+      data: {
+        labels: chartsData.os.labels,
+        datasets: [{
+          data: chartsData.os.data,
+          backgroundColor: [
+            '#FF6384',
+            '#36A2EB',
+            '#FFCE56',
+            '#4BC0C0',
+            '#9966FF',
+            '#FF9F40'
+          ]
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+          tooltip: {
+            callbacks: {
+              label: function(context) {
+                const percentage = ((context.parsed / chartsData.os.total) * 100).toFixed(1);
+                return context.label + ': ' + context.parsed.toLocaleString() + ' (' + percentage + '%)';
+              }
+            }
+          }
+        }
+      }
+    });
+
+    // バージョン別使用率グラフ
+    const versionCtx = document.getElementById('versionChart').getContext('2d');
+    new Chart(versionCtx, {
+      type: 'bar',
+      data: {
+        labels: chartsData.versions.labels,
+        datasets: [{
+          label: 'Downloads',
+          data: chartsData.versions.data,
+          backgroundColor: 'rgba(54, 162, 235, 0.8)',
+          borderColor: 'rgba(54, 162, 235, 1)',
+          borderWidth: 1
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        scales: {
+          y: {
+            beginAtZero: true,
+            ticks: {
+              callback: function(value) {
+                return (value / 1000000).toFixed(0) + 'M';
+              }
+            }
+          }
+        },
+        plugins: {
+          tooltip: {
+            callbacks: {
+              label: function(context) {
+                return 'v' + context.label + ': ' + context.parsed.y.toLocaleString();
+              }
+            }
+          }
+        }
+      }
+    });
+
+
+    // Node.jsバージョン別使用率推移グラフ
+    const versionTrendCtx = document.getElementById('versionTrendChart').getContext('2d');
+    new Chart(versionTrendCtx, {
+      type: 'line',
+      data: {
+        labels: chartsData.versionTrends.labels,
+        datasets: chartsData.versionTrends.datasets
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        interaction: {
+          mode: 'index',
+          intersect: false,
+        },
+        scales: {
+          y: {
+            beginAtZero: true,
+            max: 50,
+            ticks: {
+              callback: function(value) {
+                return value + '%';
+              }
+            }
+          }
+        },
+        plugins: {
+          tooltip: {
+            callbacks: {
+              label: function(context) {
+                return context.dataset.label + ': ' + context.parsed.y.toFixed(1) + '%';
+              }
+            }
+          },
+          legend: {
+            position: 'top'
+          }
+        }
+      }
+    });
+
+    // OS別使用率推移グラフ
+    const osTrendCtx = document.getElementById('osTrendChart').getContext('2d');
+    new Chart(osTrendCtx, {
+      type: 'line',
+      data: {
+        labels: chartsData.osTrends.labels,
+        datasets: chartsData.osTrends.datasets
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        interaction: {
+          mode: 'index',
+          intersect: false,
+        },
+        scales: {
+          y: {
+            beginAtZero: true,
+            ticks: {
+              callback: function(value) {
+                return value + '%';
+              }
+            }
+          }
+        },
+        plugins: {
+          tooltip: {
+            callbacks: {
+              label: function(context) {
+                return context.dataset.label + ': ' + context.parsed.y.toFixed(1) + '%';
+              }
+            }
+          },
+          legend: {
+            position: 'top'
+          }
+        }
+      }
+    });
+  </script>
+</body>
+</html>

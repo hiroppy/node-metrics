@@ -1,0 +1,295 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Node.js Download Statistics</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 20px;
+      background-color: #f5f5f5;
+    }
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+    }
+    h1 {
+      text-align: center;
+      color: #333;
+      margin-bottom: 30px;
+    }
+    .chart-container {
+      background: white;
+      border-radius: 8px;
+      padding: 20px;
+      margin: 20px 0;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+    .chart-wrapper {
+      position: relative;
+      height: 400px;
+    }
+    .chart-title {
+      font-size: 18px;
+      font-weight: bold;
+      margin-bottom: 15px;
+      color: #333;
+      text-align: center;
+    }
+    .grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 20px;
+    }
+    @media (max-width: 768px) {
+      .grid {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>📊 Node.js Download Statistics (2009-2025)</h1>
+    
+    <div class="chart-container">
+      <div class="chart-title">📈 Annual Download Trends</div>
+      <div class="chart-wrapper">
+        <canvas id="yearlyChart"></canvas>
+      </div>
+    </div>
+
+    <div class="grid">
+      <div class="chart-container">
+        <div class="chart-title">💻 OS Distribution (2025)</div>
+        <div class="chart-wrapper">
+          <canvas id="osChart"></canvas>
+        </div>
+      </div>
+
+      <div class="chart-container">
+        <div class="chart-title">🔢 Version Usage (2025)</div>
+        <div class="chart-wrapper">
+          <canvas id="versionChart"></canvas>
+        </div>
+      </div>
+    </div>
+
+
+    <div class="chart-container">
+      <div class="chart-title">📈 Version Usage Trends</div>
+      <div class="chart-wrapper">
+        <canvas id="versionTrendChart"></canvas>
+      </div>
+    </div>
+
+    <div class="chart-container">
+      <div class="chart-title">💻 OS Distribution Trends</div>
+      <div class="chart-wrapper">
+        <canvas id="osTrendChart"></canvas>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const chartsData = {{CHARTS_DATA}};
+    
+    // 年別ダウンロード数推移グラフ
+    const yearlyCtx = document.getElementById('yearlyChart').getContext('2d');
+    new Chart(yearlyCtx, {
+      type: 'line',
+      data: {
+        labels: chartsData.yearly.labels,
+        datasets: [{
+          label: 'Downloads',
+          data: chartsData.yearly.data,
+          borderColor: 'rgb(75, 192, 192)',
+          backgroundColor: 'rgba(75, 192, 192, 0.2)',
+          tension: 0.1,
+          fill: true
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        scales: {
+          y: {
+            beginAtZero: true,
+            ticks: {
+              callback: function(value) {
+                return (value / 1000000000).toFixed(1) + 'B';
+              }
+            }
+          }
+        },
+        plugins: {
+          tooltip: {
+            callbacks: {
+              label: function(context) {
+                return 'Downloads: ' + context.parsed.y.toLocaleString();
+              }
+            }
+          }
+        }
+      }
+    });
+
+    // OS別使用率グラフ
+    const osCtx = document.getElementById('osChart').getContext('2d');
+    new Chart(osCtx, {
+      type: 'pie',
+      data: {
+        labels: chartsData.os.labels,
+        datasets: [{
+          data: chartsData.os.data,
+          backgroundColor: [
+            '#FF6384',
+            '#36A2EB',
+            '#FFCE56',
+            '#4BC0C0',
+            '#9966FF',
+            '#FF9F40'
+          ]
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+          tooltip: {
+            callbacks: {
+              label: function(context) {
+                const percentage = ((context.parsed / chartsData.os.total) * 100).toFixed(1);
+                return context.label + ': ' + context.parsed.toLocaleString() + ' (' + percentage + '%)';
+              }
+            }
+          }
+        }
+      }
+    });
+
+    // バージョン別使用率グラフ
+    const versionCtx = document.getElementById('versionChart').getContext('2d');
+    new Chart(versionCtx, {
+      type: 'bar',
+      data: {
+        labels: chartsData.versions.labels,
+        datasets: [{
+          label: 'Downloads',
+          data: chartsData.versions.data,
+          backgroundColor: 'rgba(54, 162, 235, 0.8)',
+          borderColor: 'rgba(54, 162, 235, 1)',
+          borderWidth: 1
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        scales: {
+          y: {
+            beginAtZero: true,
+            ticks: {
+              callback: function(value) {
+                return (value / 1000000).toFixed(0) + 'M';
+              }
+            }
+          }
+        },
+        plugins: {
+          tooltip: {
+            callbacks: {
+              label: function(context) {
+                return 'v' + context.label + ': ' + context.parsed.y.toLocaleString();
+              }
+            }
+          }
+        }
+      }
+    });
+
+
+    // Node.jsバージョン別使用率推移グラフ
+    const versionTrendCtx = document.getElementById('versionTrendChart').getContext('2d');
+    new Chart(versionTrendCtx, {
+      type: 'line',
+      data: {
+        labels: chartsData.versionTrends.labels,
+        datasets: chartsData.versionTrends.datasets
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        interaction: {
+          mode: 'index',
+          intersect: false,
+        },
+        scales: {
+          y: {
+            beginAtZero: true,
+            max: 50,
+            ticks: {
+              callback: function(value) {
+                return value + '%';
+              }
+            }
+          }
+        },
+        plugins: {
+          tooltip: {
+            callbacks: {
+              label: function(context) {
+                return context.dataset.label + ': ' + context.parsed.y.toFixed(1) + '%';
+              }
+            }
+          },
+          legend: {
+            position: 'top'
+          }
+        }
+      }
+    });
+
+    // OS別使用率推移グラフ
+    const osTrendCtx = document.getElementById('osTrendChart').getContext('2d');
+    new Chart(osTrendCtx, {
+      type: 'line',
+      data: {
+        labels: chartsData.osTrends.labels,
+        datasets: chartsData.osTrends.datasets
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        interaction: {
+          mode: 'index',
+          intersect: false,
+        },
+        scales: {
+          y: {
+            beginAtZero: true,
+            ticks: {
+              callback: function(value) {
+                return value + '%';
+              }
+            }
+          }
+        },
+        plugins: {
+          tooltip: {
+            callbacks: {
+              label: function(context) {
+                return context.dataset.label + ': ' + context.parsed.y.toFixed(1) + '%';
+              }
+            }
+          },
+          legend: {
+            position: 'top'
+          }
+        }
+      }
+    });
+  </script>
+</body>
+</html>
