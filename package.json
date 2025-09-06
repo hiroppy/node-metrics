@@ -6,9 +6,6 @@
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
   },
-  "author": "abouthiroppy <git@about-hiroppy.com> (http://about-hiroppy.com)",
-  "license": "MIT",
-  "dependencies": {
-    "node-fetch": "^2.1.2"
-  }
+  "author": "hiroppy <git@about-hiroppy.com> (http://hiroppy.me)",
+  "license": "MIT"
 }

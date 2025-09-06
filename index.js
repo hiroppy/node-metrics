@@ -1,5 +1,3 @@
-const fetch = require('node-fetch');
-
 const prefix = 'https://nodejs.org/metrics/summaries';
 
 const table = [];
